@@ -1,31 +1,65 @@
-PROGRAM = segue-parede
-OBJECT_ONE = segue-parede
+# ----------------------------------------
+# Disciplina: MC404 - 1o semestre de 2015
+# Professor: Edson Borin
+#
+# DescriÃ§Ã£o: Makefile para o segundo trabalho
+# ----------------------------------------
 
-all: $(PROGRAM)
-	mksd.sh --so $(OS) --user $(PROGRAM)
-$(PROGRAM): $(OBJECT_ONE).o
-	arm-eabi-ld $(OBJECT_ONE).o -o $(OBJECT_ONE) -Ttext=0x77802000
-$(OBJECT_ONE).o:
-	arm-eabi-as $(OBJECT_ONE).s -o $(OBJECT_ONE).o
-	arm-eabi-gcc $(OBJECT_ONE).c -S -o $(OBJECT_ONE).s
+# ----------------------------------
+# SOUL object files -- Add your SOUL object files here
+SOUL_OBJS=soul.o
 
-run:
-	armsim_player --rom=$(DUMBOOT) --sd=disk.img
+# FLAGS=-g
+# ----------------------------------
+# Compiling/Assembling/Linking Tools and flags
+AS=arm-eabi-as
+AS_FLAGS=-g
+
+CC=arm-eabi-gcc
+CC_FLAGS=-g
+
+LD=arm-eabi-ld
+LD_FLAGS=-g
+
+RUN_FLAGS=-g
+
+FLAGS =-g
+
+USER_PRG=segue-parede.o
+
+# ----------------------------------
+# Default rule
+all: disk.img
+
+# ----------------------------------
+# Generic Rules
+# %.s: %.c
+segue-parede.s:segue-parede.c
+	arm-eabi-gcc segue-parede.c $(FLAGS) -S -o segue-parede.s
+# 	$(CC) $< -g -S -o $@
+
+%.o: %.s
+	$(AS) $(FLAGS) $< -o $@
+
+# ----------------------------------
+# Specific Rules
+# SOUL.x: $(SOUL_OBJS)
+# 	$(LD) $^ -o $@ $(FLAGS) --section-start=.iv=0x778005e0 -Ttext=0x77800700 -Tdata=0x77801800 -e 0x778005e0
+
+LOCO.x: $(USER_PRG) bico.o
+	$(LD) $^ -o $@ $(FLAGS) -Ttext=0x77802000
+
+disk.img: LOCO.x
+	mksd.sh --so $(OS) --user LOCO.x
 
 clean:
-	rm -rf $(OBJECT_ONE).o $(PROGRAM) disk.img
+	rm -f LOCO.x disk.img *.o segue-parede.s
+
+run:
+	armsim_player --rom=$(DUMBOOT) --sd=disk.img $(FLAGS)
+
 player:
 	player $(PLAYER_WORLDS)/simple.cfg
 
-debug:
-	arm-eabi-gcc $(OBJECT_ONE).c -g -S -o $(OBJECT_ONE).s
-	arm-eabi-as $(OBJECT_ONE).s -g -o $(OBJECT_ONE).o
-	arm-eabi-ld $(OBJECT_ONE).o -g -o $(OBJECT_ONE) -Ttext=0x77802000
-	mksd.sh --so $(OS) --user $(PROGRAM)
-	$(ARMSIM) --rom=$(DUMBOOT) --sd=disk.img -g
-run_gdb:
-	$(GDB) $(PROGRAM)
-
-
-#/home/mc404/simuladorfromspecg/simulador/simulador_player/bin/dumboot.bin
-# /home/mc404/simuladorfromspecg/simulador/simulador_player/bin/knrl
+debug_loco:
+	$(GDB) LOCO.x

@@ -11,8 +11,8 @@
 
 
 .data
-output_buffer: .skip 32
-error_message:  .asciz "Entramos em testFunction2!\n"  @coloca a string na memoria
+  .skip 4096
+  USR_STACK:
 
 .text
 .align 4
@@ -91,7 +91,7 @@ set_motors_speed:
   mov r1, r4
   mov r7, #19
   svc 0x0
-  pop {r4, r7}
+  pop {r4, r5, r7}
   mov pc, lr
 
 @ r0 = endereco da variavel que deve armazenar o tempo
@@ -122,22 +122,6 @@ add_alarm:
   svc 0x0
   pop {r7, lr}
   mov pc, lr
-
-@ Escreve uma sequencia de bytes na saida padrao.
-@ parametros:
-@  r0: endereco do buffer de memoria que contem a sequencia de bytes.
-@  r1: numero de bytes a serem escritos
-write:
-    push {r4-r7, lr}
-    @mov r4, r0
-    @mov r5, r1
-    mov r0, #1         @ stdout file descriptor = 1
-    ldr r1, =error_message       @ endereco do buffer
-    mov r2, #27        @ tamanho do buffer.
-    mov r7, #4         @ write
-    svc 0x0
-    pop {r4-r7, lr}
-    mov pc, lr
 
 @ r0 = id do motor que deseja-se verificar
 @ retorno:

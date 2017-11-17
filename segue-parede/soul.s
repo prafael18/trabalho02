@@ -12,9 +12,9 @@ interrupt_vector:
   CONTADOR: .skip 4
   @com um loop de 0x3000 no delay_time e 100 no TIME_SZ, contador incrementa 3 unidades
   @.set TIME_SZ, 600
-  .set TIME_SZ, 100
+  .set TIME_SZ, 200
   .set TOP_STACK, 0xf8000000
-  svc_handler_array: .skip 4*7
+  svc_handler_array: .skip 4*8
 
     CALLBACKS: .skip 4
     proximity_callback_array: .skip 4*8
@@ -26,9 +26,12 @@ interrupt_vector:
     alarm_array: .skip 4*8
     stop_time_alarm_array: .skip 4*8
 
-    SVC_STACK: .skip 2048
-    IRQ_STACK: .skip 1024
-    USR_STACK: .skip 4096
+    sudo_branch_addr: .skip 4
+
+    .skip 1024
+    IRQ_STACK:
+    .skip 2048
+    SVC_STACK:
 
 .text
 .align 4
@@ -70,6 +73,8 @@ RESET_HANDLER:
   str r1, [r0, #20]
   ldr r1, =set_alarm
   str r1, [r0, #24]
+  ldr r1, =sudo
+  str r1, [r0, #28]
 
   @ Ajustar a pilha do modo IRQ.
   @ Você deve iniciar a pilha do modo IRQ aqui. Veja abaixo como usar a instrução MSR para chavear de modo.
@@ -89,15 +94,11 @@ RESET_HANDLER:
 
   mov r2, #NO_INT|IRQ_MODE
   msr CPSR_c, r2
-  ldr r1, =IRQ_STACK
-  add r1, r1, #1024
-  mov sp, r1
+  ldr sp, =IRQ_STACK
 
   mov r2, #NO_INT|SVC_MODE
   msr CPSR_c, r2
-  ldr r1, =SVC_STACK
-  add r1, r1, #2048
-  mov sp, r1
+  ldr sp, =SVC_STACK
 
   mov r2, #SVC_MODE
   msr CPSR_c, r2
@@ -183,10 +184,9 @@ RESET_HANDLER:
 
       label1:
       msr CPSR_c, #USR_MODE|NO_FIQ
-      ldr r1, =USR_STACK
-      add r1, r1, 4096
-      mov sp, r1
-      .set LOCO_ADDRESS, 0x77810000
+      .set USR_STACK, 0x77814550
+      ldr sp, =USR_STACK
+      .set LOCO_ADDRESS, 0x77812000
       ldr pc, =LOCO_ADDRESS
 
       @b _main
@@ -229,7 +229,17 @@ IRQ_HANDLER:
     exceeded_threshold:
       lsl r8, #2
       ldr r2, [r6, r8]
+      mrs r0, SPSR
+      mrs r1, CPSR
+      ldr r0, =sudo_branch_addr
+      ldr r1, =end_callback_loop
+      str r1, [r0]
+      msr CPSR_c, #USR_MODE|NO_INT
       blx r2
+      mov r7, #23
+      svc 0x0
+      mrs r0, SPSR
+      mrs r1, CPSR
     end_callback_loop:
 
     @r1 = tempo do sistema
@@ -252,7 +262,13 @@ IRQ_HANDLER:
       b alarm_loop
     found_alarm:
       ldr r0, [r2, r6]
+      ldr r1, =sudo_branch_addr
+      ldr r2, =end_irq_handler
+      str r2, [r1]
+      msr CPSR_c, #USR_MODE|NO_INT
       blx r0
+      mov r7, #23
+      svc 0x0
     end_irq_handler:
       ldr r0, =CONTADOR
       ldr r1, [r0]
@@ -275,6 +291,15 @@ SVC_HANDLER:
   blx r4
   ldmfd sp!, {r4-r12, lr}
   movs pc, lr
+
+
+sudo:
+  msr CPSR_c, #IRQ_MODE|NO_INT
+  mrs r0, SPSR
+  mrs r1, CPSR
+  ldr r0, =sudo_branch_addr
+  ldr r0, [r0]
+  mov pc, r0
 
 @ r0 = identificador do sonar
 @ retorno:
@@ -513,7 +538,7 @@ delay_time:
   ldr r1, =CONTADOR
   ldr r2, [r1]
   time_loop:
-    cmp r0, #0x3000
+    cmp r0, #0x4000
     beq end_time_loop
     add r0, r0, #1
     b time_loop

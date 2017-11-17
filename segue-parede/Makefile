@@ -23,6 +23,8 @@ LD_FLAGS=-g
 
 RUN_FLAGS=-g
 
+FLAGS = 
+
 USER_PRG=segue-parede.o
 
 # ----------------------------------
@@ -31,11 +33,13 @@ all: disk.img
 
 # ----------------------------------
 # Generic Rules
-%.s: %.c
-	$(CC) $(FLAGS) $< -S -o $@
+# %.s: %.c
+segue-parede.s:segue-parede.c
+	arm-eabi-gcc segue-parede.c -g -S -o segue-parede.s
+# 	$(CC) $< -g -S -o $@
 
 %.o: %.s
-	$(AS) $(FLAGS) $< -o $@
+	$(AS) -g $< -o $@
 
 # ----------------------------------
 # Specific Rules
@@ -43,13 +47,13 @@ SOUL.x: $(SOUL_OBJS)
 	$(LD) $^ -o $@ $(FLAGS) --section-start=.iv=0x778005e0 -Ttext=0x77800700 -Tdata=0x77801800 -e 0x778005e0
 
 LOCO.x: $(USER_PRG) bico.o
-	$(LD) $^ -o $@ $(FLAGS) -Ttext=0x77810000
+	$(LD) $^ -o $@ $(FLAGS) -Ttext=0x77812000
 
 disk.img: SOUL.x LOCO.x
 	mksd.sh --so SOUL.x --user LOCO.x
 
 clean:
-	rm -f SOUL.x LOCO.x disk.img *.o
+	rm -f SOUL.x LOCO.x disk.img *.o segue-parede.s
 
 run:
 	armsim_player --rom=$(DUMBOOT) --sd=disk.img $(FLAGS)
