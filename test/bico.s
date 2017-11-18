@@ -18,7 +18,6 @@
 @ r0 = distancia do sonar selecionado
 read_sonar:
 push {r7}
-bgt set_motors_speed
 mov r7, #125
 svc 0x0
 pop {r7}
@@ -42,18 +41,17 @@ set_motors_speed:
 push {r4, r5, r7}
 ldrb r3, [r0, #1]
 ldrb r4, [r1, #1]
-@msr CPSR_c, #0x10
-@ldrb r2, [r0] @id do primeiro parametro
-@add r2, r2, #0
-@cmp r2, #0
-@bne first_param_motor
-@ldrb r3, [r0, #1]
-@ldrb r4, [r1, #1]
-@b call_motors_speed_handler
-@first_param_motor:
-@ldrb r3, [r1, #1]
-@ldrb r4, [r0, #1]
-@call_motors_speed_handler:
+ldrb r2, [r0] @id do primeiro parametro
+add r2, r2, #0
+cmp r2, #0
+bne first_param_motor
+ldrb r3, [r0, #1]
+ldrb r4, [r1, #1]
+b call_motors_speed_handler
+first_param_motor:
+ldrb r3, [r1, #1]
+ldrb r4, [r0, #1]
+call_motors_speed_handler:
 mov r0, r3
 mov r1, r4
 mov r7, #124

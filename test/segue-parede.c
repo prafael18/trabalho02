@@ -14,7 +14,9 @@ int _start(int argv, char** argc) {
     motor_cfg_t right_motor, left_motor;
     right_motor.id = 0;
     left_motor.id = 1;
-    read_sonar(3);
+    right_motor.speed = 10;
+    left_motor.speed = 10;
+    set_motors_speed(&right_motor, &left_motor);
     busca_parede(&right_motor, &left_motor);
     segue_parede(&right_motor, &left_motor);
     return 0;
