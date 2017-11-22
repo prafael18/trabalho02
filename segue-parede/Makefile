@@ -23,7 +23,7 @@ LD_FLAGS=-g
 
 RUN_FLAGS=-g
 
-FLAGS = 
+FLAGS =
 
 USER_PRG=segue-parede.o
 

@@ -33,6 +33,11 @@ typedef struct
  */
 void set_motor_speed(motor_cfg_t* motor);
 
+void write();
+
+void write_turn_right();
+
+void write_aligning_right();
 /*
  * Sets both motors speed.
  * Parameters:

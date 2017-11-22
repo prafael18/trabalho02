@@ -1,0 +1,41 @@
+int _start(int argv, char** argc) {
+    motor_cfg_t right_motor, left_motor;
+    int dist, i;
+    float temp;
+    float vLeft, vRight;
+    right_motor.id = 0;
+    left_motor.id = 1;
+    float braitenbergL[8] = {-0.2, -0.4, -0.6, -0.8, -1, -1.2, -1.4, -1.6};
+    float braitenbergR[8] = {-1.6, -1.4, -1.2, -1, -0.8, -0.6, -0.4, -0.2};
+    float detect[8];
+
+    while (1) {
+      for (i = 0; i < 8; i++) {
+        dist = read_sonar(i);
+        if (dist < NO_DETECTION_DIST) {
+          if (dist < MAX_DETECTION_DIST) {
+            dist = MAX_DETECTION_DIST;
+          }
+          detect[i] = 1-((dist- MAX_DETECTION_DIST)/(NO_DETECTION_DIST-MAX_DETECTION_DIST));
+        }
+        else {
+            detect[i] = 0;
+        }
+      }
+      vLeft = LINEAR_VEL;
+      vRight = LINEAR_VEL;
+      for (i = 0; i < 8; i++) {
+        temp = braitenbergL[i]*detect[i];
+        vLeft = vLeft + temp;
+        temp = braitenbergR[i]*detect[i];
+        vRight = vRight + temp;
+      }
+      right_motor.speed = (int) vRight;
+      left_motor.speed = (int) vLeft;
+      set_motors_speed(&right_motor, &left_motor);
+    }
+
+    // busca_parede(&right_motor, &left_motor);
+    // segue_parede(&right_motor, &left_motor);
+    return 0;
+}

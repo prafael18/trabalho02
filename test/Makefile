@@ -23,7 +23,7 @@ LD_FLAGS=-g
 
 RUN_FLAGS=-g
 
-FLAGS =-g
+FLAGS =
 
 USER_PRG=segue-parede.o
 
@@ -59,7 +59,7 @@ run:
 	armsim_player --rom=$(DUMBOOT) --sd=disk.img $(FLAGS)
 
 player:
-	player $(PLAYER_WORLDS)/simple.cfg
+	player $(PLAYER_WORLDS)/circulo.cfg
 
 debug_loco:
 	$(GDB) LOCO.x

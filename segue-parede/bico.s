@@ -11,8 +11,8 @@
 
 
 .data
-  .skip 4096
-  USR_STACK:
+  @.skip 4096
+  @USR_STACK:
 
 .text
 .align 4

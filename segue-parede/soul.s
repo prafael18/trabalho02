@@ -12,8 +12,7 @@ interrupt_vector:
   CONTADOR: .skip 4
   @com um loop de 0x3000 no delay_time e 100 no TIME_SZ, contador incrementa 3 unidades
   @.set TIME_SZ, 600
-  .set TIME_SZ, 200
-  .set TOP_STACK, 0xf8000000
+  .set TIME_SZ, 100
   svc_handler_array: .skip 4*8
 
     CALLBACKS: .skip 4
@@ -32,6 +31,8 @@ interrupt_vector:
     IRQ_STACK:
     .skip 2048
     SVC_STACK:
+    .skip 4096
+    USR_STACK:
 
 .text
 .align 4
@@ -184,7 +185,7 @@ RESET_HANDLER:
 
       label1:
       msr CPSR_c, #USR_MODE|NO_FIQ
-      .set USR_STACK, 0x77814550
+      @.set USR_STACK, 0x778145c0
       ldr sp, =USR_STACK
       .set LOCO_ADDRESS, 0x77812000
       ldr pc, =LOCO_ADDRESS
@@ -195,7 +196,7 @@ RESET_HANDLER:
 IRQ_HANDLER:
     @ Preciso desabilitar interrupcoes IRQ e FIQ ou elas ja vem desabilitadas por default.
     sub lr, lr, #4
-    stmfd sp!, {r0-r12, lr}
+    push {r0-r12, lr}
 
     @desabilita interrupcoes do mesmo tipo no modo IRQ
     msr CPSR_c, #IRQ_MODE|NO_INT
@@ -220,17 +221,34 @@ IRQ_HANDLER:
       ldrb r0, [r4, r8] @sonar_id
       bl read_sonar
       lsl r8, #1
-      ldrh r1, [r5, r8] @p
+      ldrh r1, [r5, r8] @threshold
       lsr r8, #1
       cmp r0, r1
       blt exceeded_threshold
       add r8, r8, #1
       b callback_loop
     exceeded_threshold:
+      mov r0, r7 @move o numero de elementos no vetor para r0
+      mov r1, r8 @elemento do vetor que deve ser removido
+      mov r2, #1 @tamanho de cada elemento a ser removido
+      mov r3, r4 @endereco do vetor
+      bl remove_array_element
+      mov r0, r7
+      mov r1, r8
+      mov r2, #2
+      mov r3, r5
+      bl remove_array_element
+      mov r0, r7
+      mov r1, r8
+      mov r2, #4
+      mov r3, r6
+      bl remove_array_element
+      ldr r0, =CALLBACKS
+      ldr r1, [r0]
+      sub r1, r1, #1 @decrementa o numero de callbacks
+      str r1, [r0]
       lsl r8, #2
       ldr r2, [r6, r8]
-      mrs r0, SPSR
-      mrs r1, CPSR
       ldr r0, =sudo_branch_addr
       ldr r1, =end_callback_loop
       str r1, [r0]
@@ -238,34 +256,49 @@ IRQ_HANDLER:
       blx r2
       mov r7, #23
       svc 0x0
-      mrs r0, SPSR
-      mrs r1, CPSR
     end_callback_loop:
 
     @r1 = tempo do sistema
     @TODO: Devo priorizar os alarmes que foram setados antes
     @ou posso assumir que nao haverao alarmes para o mesmo tempo
-    ldr r2, =alarm_array
-    ldr r3, =stop_time_alarm_array
-    ldr r4, =ALARMS
-    ldr r5, [r4]
-    mov r6, #0
+    ldr r0, =CONTADOR
+    ldr r0, [r0]
+    ldr r4, =alarm_array
+    ldr r5, =stop_time_alarm_array
+    ldr r6, =ALARMS
+    ldr r6, [r6]
+    mov r7, #0
     alarm_loop:
-      cmp r6, r5
+      cmp r7, r6
       beq end_irq_handler
-      lsl r6, #2
-      ldr r7, [r3, r6]
-      cmp r1, r7
+      lsl r7, #2
+      ldr r8, [r5, r7]
+      lsr r7, #2
+      cmp r0, r8
       beq found_alarm
-      lsr r6, #2
-      add r6, r6, #1
+      add r7, r7, #1
       b alarm_loop
     found_alarm:
-      ldr r0, [r2, r6]
-      ldr r1, =sudo_branch_addr
-      ldr r2, =end_irq_handler
-      str r2, [r1]
+      mov r0, r6 @move o numero de elementos no vetor para r0
+      mov r1, r7 @elemento do vetor que deve ser removido
+      mov r2, #4 @tamanho de cada elemento a ser removido
+      mov r3, r4 @endereco do vetor
+      bl remove_array_element
+      mov r0, r6 @move o numero de elementos no vetor para r0
+      mov r1, r7 @elemento do vetor que deve ser removido
+      mov r2, #4 @tamanho de cada elemento a ser removido
+      mov r3, r5 @endereco do vetor
+      bl remove_array_element
+      ldr r0, =ALARMS
+      ldr r1, [r0]
+      sub r1, r1, #1 @decrementa o numero de alarmes
+      str r1, [r0]
+      ldr r0, =sudo_branch_addr
+      ldr r1, =end_irq_handler
+      str r1, [r0]
       msr CPSR_c, #USR_MODE|NO_INT
+      lsl r7, #2
+      ldr r0, [r4, r7]
       blx r0
       mov r7, #23
       svc 0x0
@@ -275,12 +308,12 @@ IRQ_HANDLER:
       add r1, r1, #1
       str r1, [r0]
 
-      ldmfd sp!, {r0-r12, lr}
+      pop {r0-r12, lr}
       movs pc, lr
 
 SVC_HANDLER:
   @sub lr, lr, #4
-  stmfd sp!, {r4-r12, lr}
+  push {r4-r12, lr}
 
   msr CPSR_c, #SVC_MODE|NO_INT
 
@@ -289,7 +322,7 @@ SVC_HANDLER:
   lsl r7, #2
   ldr r4, [r4, r7]
   blx r4
-  ldmfd sp!, {r4-r12, lr}
+  pop {r4-r12, lr}
   movs pc, lr
 
 
@@ -538,7 +571,7 @@ delay_time:
   ldr r1, =CONTADOR
   ldr r2, [r1]
   time_loop:
-    cmp r0, #0x4000
+    cmp r0, #0x1000
     beq end_time_loop
     add r0, r0, #1
     b time_loop
@@ -554,3 +587,40 @@ validate_speed:
   mov r0, #-2
   end_validate_speed:
   mov pc, lr
+
+@ r0 = numero de elementos no vetor
+@ r1 = elemento do vetor que deve ser removido
+@ r2 = tamanho do elemento a ser removido
+@ r3 = endereco do vetor
+remove_array_element:
+  push {r4, r5}
+  sub r0, r0, #1
+  loop_remove_element:
+    cmp r1, r0
+    beq end_remove_element
+    add r1, r1, #1
+    cmp r2, #2
+    beq load_two_bytes
+    cmp r2, #4
+    beq load_four_bytes
+      ldrb r4, [r3, r1]
+      sub r5, r1, #1
+      strb r4, [r3, r5]
+      b loop_remove_element
+    load_two_bytes:
+      lsl r1, #1
+      ldrh r4, [r3, r1]
+      sub r5, r1, #2
+      strh r4, [r3, r5]
+      lsr r1, #1
+      b loop_remove_element
+    load_four_bytes:
+      lsl r1, #2
+      ldr r4, [r3, r1]
+      sub r5, r1, #4
+      str r4, [r3, r5]
+      lsr r1, #2
+      b loop_remove_element
+  end_remove_element:
+    pop {r4, r5}
+    mov pc, lr
