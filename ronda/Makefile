@@ -25,7 +25,7 @@ RUN_FLAGS=-g
 
 FLAGS =
 
-USER_PRG=segue-parede.o
+USER_PRG=ronda.o
 
 # ----------------------------------
 # Default rule
@@ -34,8 +34,8 @@ all: disk.img
 # ----------------------------------
 # Generic Rules
 # %.s: %.c
-segue-parede.s:segue-parede.c
-	arm-eabi-gcc segue-parede.c -g -S -o segue-parede.s
+ronda.s:ronda.c
+	arm-eabi-gcc ronda.c -g -S -o ronda.s
 # 	$(CC) $< -g -S -o $@
 
 %.o: %.s
@@ -53,13 +53,13 @@ disk.img: SOUL.x LOCO.x
 	mksd.sh --so SOUL.x --user LOCO.x
 
 clean:
-	rm -f SOUL.x LOCO.x disk.img *.o segue-parede.s
+	rm -f SOUL.x LOCO.x disk.img *.o ronda.s
 
 run:
 	armsim_player --rom=$(DUMBOOT) --sd=disk.img $(FLAGS)
 
 player:
-	player $(PLAYER_WORLDS)/curva.cfg
+	player $(PLAYER_WORLDS)/simple.cfg
 
 debug_loco:
 	$(GDB) LOCO.x

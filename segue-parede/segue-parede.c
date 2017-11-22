@@ -14,6 +14,9 @@ void busca_parede(motor_cfg_t *right_motor, motor_cfg_t *left_motor);
 void busca_obstaculo(motor_cfg_t* right_motor, motor_cfg_t*left_motor);
 void align_left(motor_cfg_t* right_motor, motor_cfg_t* left_motor);
 
+//testar colocar a logica do zig zag dentro de uma funcao que vai chamar a si mesma no final
+//mas que seta o tempo para 0 e chama a si com um alarmes
+
 int _start(int argv, char** argc) {
     motor_cfg_t right_motor, left_motor;
     right_motor.id = 0;
@@ -39,7 +42,7 @@ void turn_right(unsigned char sharp_turn) {
     left_motor.speed = 10;
   }
   else {
-    right_motor.speed = 5;
+    right_motor.speed = 7;
     left_motor.speed = 10;
   }
   for (i; i < 10; i++) {
@@ -58,7 +61,7 @@ void turn_right(unsigned char sharp_turn) {
    }
    else {
      right_motor.speed = 10;
-     left_motor.speed = 5;
+     left_motor.speed = 7;
    }
    for (i; i < 10; i++) {
      set_motors_speed(&right_motor, &left_motor);
@@ -76,6 +79,7 @@ void turn_right(unsigned char sharp_turn) {
      set_motors_speed(&right_motor, &left_motor);
    }
    register_proximity_callback(4, 1200, *turn_sharp_right);
+  // segue_parede(&right_motor, &left_motor);
 
   //  right_motor.speed = 20;
   //  left_motor.speed = 20;
