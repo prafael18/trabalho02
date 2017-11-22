@@ -21,17 +21,17 @@
 @ return
 @ r0 = distancia do sonar selecionado
 read_sonar:
-  push {r7}
+  push {r7, lr}
   mov r7, #16
   svc 0x0
-  pop {r7}
+  pop {r7, lr}
   mov pc, lr
 
 @ r0 = inteiro do sensor onde comeca a leitura
 @ r1 = inteiro do sensor onde termina a leitura
 @ r2 = ponteiro para vetor de inteiros que deve receber as distancias
 read_sonars:
-  push {r4-r8}
+  push {r4-r8, lr}
   mov r4, r0
   mov r5, r1
   mov r6, r2
@@ -49,34 +49,34 @@ read_sonars:
     add r9, r9, #1
     b loop_read_sonars
   end_read_sonars:
-  pop {r4-r8}
+  pop {r4-r8, lr}
   mov pc, lr
 
 @r0 = sensor_id que deve ser monitorado
 @ r1 = distancia limite onde deve-se chamar a funcao
 @ r2 = endereco da funcao que deve ser chamada quando alcanca o threshold
 register_proximity_callback:
-  push {r7}
+  push {r7, lr}
   mov r7, #17
   svc 0x0
-  pop {r7}
+  pop {r7, lr}
   mov pc, lr
 
 @ r0 = endereco da struct motor_cfg_t com variaveis id e speed.
 set_motor_speed:
-  push {r7}
+  push {r7, lr}
   ldrb r1, [r0, #1]
   ldrb r0, [r0]
   mov r7, #18
   svc 0x0
-  pop {r7}
+  pop {r7, lr}
   mov pc, lr
 
  @r0 = endereco de um dos motores.
  @r1 = endereco do outro motor.
  @posso assumir que ambos os motores vao ter ids validos?
 set_motors_speed:
-  push {r4, r5, r7}
+  push {r4, r5, r7, lr}
   ldrb r2, [r0] @id do primeiro parametro
   cmp r2, #0
   bne first_param_motor1
@@ -91,7 +91,7 @@ set_motors_speed:
   mov r1, r4
   mov r7, #19
   svc 0x0
-  pop {r4, r5, r7}
+  pop {r4, r5, r7, lr}
   mov pc, lr
 
 @ r0 = endereco da variavel que deve armazenar o tempo

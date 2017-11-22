@@ -8,6 +8,8 @@
 # ----------------------------------
 # SOUL object files -- Add your SOUL object files here
 SOUL_OBJS=soul.o
+PLAYER_WORLDS = /home/mc404/Documentos/mc404/trabalho02/worlds_mc404
+
 
 # FLAGS=-g
 # ----------------------------------

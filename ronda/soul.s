@@ -13,7 +13,7 @@ interrupt_vector:
   @com um loop de 0x3000 no delay_time e 100 no TIME_SZ, contador incrementa 3 unidades
   @.set TIME_SZ, 600
   .set TIME_SZ, 100
-  svc_handler_array: .skip 4*8
+  svc_handler_array: .skip 4*9
 
     CALLBACKS: .skip 4
     proximity_callback_array: .skip 4*8
@@ -76,6 +76,8 @@ RESET_HANDLER:
   str r1, [r0, #24]
   ldr r1, =sudo
   str r1, [r0, #28]
+  ldr r1, =toggle_usr_irq
+  str r1, [r0, #32]
 
   @ Ajustar a pilha do modo IRQ.
   @ Você deve iniciar a pilha do modo IRQ aqui. Veja abaixo como usar a instrução MSR para chavear de modo.
@@ -186,6 +188,7 @@ RESET_HANDLER:
       label1:
       msr CPSR_c, #USR_MODE|NO_FIQ
       @.set USR_STACK, 0x778145c0
+      @.set USR_STACK, 0x77817000
       ldr sp, =USR_STACK
       .set LOCO_ADDRESS, 0x77812000
       ldr pc, =LOCO_ADDRESS
@@ -325,6 +328,18 @@ SVC_HANDLER:
   pop {r4-r12, lr}
   movs pc, lr
 
+@r0 = 0 se quer desabilitar e 1 se quer habilitar interrupcoes irq
+toggle_usr_irq:
+  mrs r1, SPSR
+  cmp r0, #0
+  beq disable_usr_irq
+  msr SPSR_c, #USR_MODE
+  b end_toggle_usr_irq
+  disable_usr_irq:
+  msr SPSR_c, #USR_MODE|NO_INT
+  end_toggle_usr_irq:
+  mrs r0, SPSR
+  mov pc, lr
 
 sudo:
   msr CPSR_c, #IRQ_MODE|NO_INT
@@ -571,7 +586,7 @@ delay_time:
   ldr r1, =CONTADOR
   ldr r2, [r1]
   time_loop:
-    cmp r0, #0x4000
+    cmp r0, #0x800
     beq end_time_loop
     add r0, r0, #1
     b time_loop

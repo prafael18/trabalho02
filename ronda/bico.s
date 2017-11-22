@@ -6,7 +6,7 @@
   .global get_time
   .global set_time
   .global add_alarm
-
+  .global toggle_usr_irq
   .global write
 
 
@@ -123,6 +123,15 @@ add_alarm:
   pop {r7, lr}
   mov pc, lr
 
+
+@funcao que desabilita interrupcoes IRQ do modo usuario
+
+toggle_usr_irq:
+  push {r7, lr}
+  mov r7, #24
+  svc 0x0
+  pop {r7, lr}
+  mov pc, lr
 @ r0 = id do motor que deseja-se verificar
 @ retorno:
 @ r0 = id do motor valido ou -1 caso id seja invalido

@@ -12,6 +12,7 @@ SOUL_OBJS=soul.o
 # FLAGS=-g
 # ----------------------------------
 # Compiling/Assembling/Linking Tools and flags
+PLAYER_WORLDS = /home/mc404/Documentos/mc404/trabalho02/worlds_mc404
 AS=arm-eabi-as
 AS_FLAGS=-g
 
@@ -24,7 +25,6 @@ LD_FLAGS=-g
 RUN_FLAGS=-g
 
 FLAGS =
-
 USER_PRG=segue-parede.o
 
 # ----------------------------------
@@ -59,7 +59,7 @@ run:
 	armsim_player --rom=$(DUMBOOT) --sd=disk.img $(FLAGS)
 
 player:
-	player $(PLAYER_WORLDS)/curva.cfg
+	player $(PLAYER_WORLDS)/seguecirculo.cfg
 
 debug_loco:
 	$(GDB) LOCO.x
